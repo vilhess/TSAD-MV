@@ -29,7 +29,7 @@ if __name__ == '__main__':
     parser.add_argument('--file_list', type=str, default=DEFAULT_PATHS['file_list'])
     parser.add_argument('--save_dir', type=str, default=DEFAULT_PATHS['save_dir'])
     parser.add_argument('--AD_Name', type=str, default='TranAD')
-    parser.add_argument('--load_imputation_dir', type=str, default=DEFAULT_PATHS['save_imputation_dir'])
+    parser.add_argument('--load_imputation_dir', type=str, default=DEFAULT_PATHS['load_imputation_dir'])
     args = parser.parse_args()
 
     os.makedirs(args.save_dir, exist_ok = True)
@@ -64,6 +64,17 @@ if __name__ == '__main__':
         for imputer in IMPUTERS.values():
             os.makedirs(f'{args.save_dir}/{mechanism}/{args.AD_Name}/{imputer.imputer_name}', exist_ok=True)
 
+    # Load existing results so we don't overwrite them on resume
+    for mechanism in MECHANISMS:
+        for imputer in IMPUTERS.values():
+            for missing_rate in MISSING_RATES:
+                save_path = f'{args.save_dir}/{mechanism}/{args.AD_Name}/{imputer.imputer_name}/{missing_rate}.csv'
+                if os.path.exists(save_path):
+                    existing = pd.read_csv(save_path)
+                    all_writes_csv[mechanism][imputer.imputer_name][missing_rate] = existing.values.tolist()
+                    if col_w is None and not existing.empty:
+                        col_w = list(existing.columns)
+
     for i, filename in enumerate(file_list):
 
         print('Processing:{} by {}'.format(filename, args.AD_Name))
@@ -74,9 +85,18 @@ if __name__ == '__main__':
 
         clf = None
 
+        for imputer in IMPUTERS.values():
+            if getattr(imputer, 'trainable', False):
+                if args.load_imputation_dir is None:
+                    imputer.fit(data_train, prc_val=0.2)
+
         for mechanism in MECHANISMS:
             for imputer in IMPUTERS.values():
                 for missing_rate in MISSING_RATES:
+
+                    if any(row[0] == filename for row in all_writes_csv[mechanism][imputer.imputer_name][missing_rate]):
+                        print(f"Already processed {filename} for {mechanism} with {imputer.imputer_name} at missing rate {missing_rate}, skipping.")
+                        continue
 
                     mask = get_mask(torch.from_numpy(data), seed=seed*i*(1+10*missing_rate), missing_rate=missing_rate, strategy=mechanism).numpy()
                     all_datas = get_dict_data(data_train, data, mask, imputer, missing_rate, args.load_imputation_dir, filename, mechanism)
@@ -112,7 +132,7 @@ if __name__ == '__main__':
                             columns=col_w,
                         ).to_csv(save_path, index=False)
         
-    del output, all_datas, data, label, data_missing, data_imputed, mask, clf, imputer
+    del output, all_datas, data, label, mask, clf, imputer
     torch.cuda.empty_cache()
     gc.collect()
 

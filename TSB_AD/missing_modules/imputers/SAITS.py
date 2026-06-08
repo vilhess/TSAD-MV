@@ -3,10 +3,11 @@ from pygrinder import mcar
 from pypots.imputation import SAITS
 
 class SAITSConfig:
-    def __init__(self, in_dim, ws=64, n_layers=2, d_model=256, n_heads=4, d_k=64, d_v=64, d_ffn=128, dropout=0.1, epochs=20):
+    def __init__(self, in_dim=None, ws=64, n_layers=2, d_model=256, n_heads=4, d_k=64, d_v=64, d_ffn=128, dropout=0.1, epochs=20):
         self.imputer_name = 'saits'
+        self.trainable = True
         self.ws = ws
-        self.in_dim = in_dim
+        self.in_dim = in_dim  # overridden in fit() from actual data shape
         self.epochs = epochs
 
         self.n_layers = n_layers
@@ -17,9 +18,17 @@ class SAITSConfig:
         self.d_ffn = d_ffn
         self.dropout = dropout
 
-        self.model = SAITS(n_steps=ws, n_features=in_dim, n_layers=n_layers, d_model=d_model, n_heads=n_heads, d_k=d_k, d_v=d_v, d_ffn=d_ffn, dropout=dropout, epochs=epochs)
+        self.model = None  # built in fit() once in_dim is known
         
     def fit(self, trainset, prc_val):
+        in_dim = trainset.shape[1] if trainset.ndim == 2 else 1
+        self.in_dim = in_dim
+        self.model = SAITS(
+            n_steps=self.ws, n_features=in_dim,
+            n_layers=self.n_layers, d_model=self.d_model,
+            n_heads=self.n_heads, d_k=self.d_k, d_v=self.d_v,
+            d_ffn=self.d_ffn, dropout=self.dropout, epochs=self.epochs,
+        )
 
         x_sliced = []
         for i in range(0, len(trainset) - self.ws + 1):

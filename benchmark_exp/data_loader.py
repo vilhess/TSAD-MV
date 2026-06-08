@@ -28,6 +28,8 @@ def get_dict_data(train_data, data, mask, imputer, missing_rate, saved_imputatio
         else:
             print(f"No imputed data found at {imputed_path}, performing imputation...")
             data_imputed = imputer.impute(data_missing, mask)
+    else:
+        data_imputed = imputer.impute(data_missing, mask)
 
     assert np.allclose(data_imputed[mask == 0], data[mask == 0]), "Imputed values do not match original values where mask is 0"
     print(f"Imputation completed for {filename} with missing rate {missing_rate} using {imputer.imputer_name}.")
