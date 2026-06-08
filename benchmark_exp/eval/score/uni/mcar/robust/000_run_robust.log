@@ -1,0 +1,48 @@
+2026-05-31 15:08:56,974 - INFO - Starting at 023_NAB_id_23_Facility_tr_4512_1st_16551.csv
+2026-05-31 15:09:36,575 - INFO - Starting at 023_NAB_id_23_Facility_tr_4512_1st_16551.csv
+2026-05-31 15:10:10,717 - INFO - Starting at 023_NAB_id_23_Facility_tr_4512_1st_16551.csv
+2026-05-31 15:10:54,346 - INFO - Starting at 023_NAB_id_23_Facility_tr_4512_1st_16551.csv
+2026-05-31 15:11:59,844 - INFO - Starting at 023_NAB_id_23_Facility_tr_4512_1st_16551.csv
+2026-05-31 15:12:39,989 - INFO - Starting at 023_NAB_id_23_Facility_tr_4512_1st_16551.csv
+2026-05-31 15:13:14,492 - INFO - Starting at 023_NAB_id_23_Facility_tr_4512_1st_16551.csv
+2026-05-31 15:13:40,093 - INFO - Starting at 023_NAB_id_23_Facility_tr_4512_1st_16551.csv
+2026-05-31 15:14:08,389 - INFO - Starting at 023_NAB_id_23_Facility_tr_4512_1st_16551.csv
+2026-05-31 15:14:47,529 - INFO - Starting at 023_NAB_id_23_Facility_tr_4512_1st_16551.csv
+2026-05-31 15:15:00,482 - INFO - Starting at 023_NAB_id_23_Facility_tr_4512_1st_16551.csv
+2026-05-31 15:19:56,663 - INFO - Starting at 023_NAB_id_23_Facility_tr_4512_1st_16551.csv
+2026-05-31 15:20:43,994 - INFO - Starting at 023_NAB_id_23_Facility_tr_4512_1st_16551.csv
+2026-05-31 15:21:07,389 - INFO - Starting at 023_NAB_id_23_Facility_tr_4512_1st_16551.csv
+2026-05-31 15:21:38,655 - INFO - Starting at 023_NAB_id_23_Facility_tr_4512_1st_16551.csv
+2026-05-31 15:22:24,477 - INFO - Starting at 023_NAB_id_23_Facility_tr_4512_1st_16551.csv
+2026-05-31 18:10:02,782 - INFO - Starting at 023_NAB_id_23_Facility_tr_4512_1st_16551.csv
+2026-05-31 18:10:31,699 - INFO - Starting at 023_NAB_id_23_Facility_tr_4512_1st_16551.csv
+2026-05-31 18:11:52,605 - INFO - Starting at 023_NAB_id_23_Facility_tr_4512_1st_16551.csv
+2026-05-31 18:13:31,861 - INFO - Starting at 023_NAB_id_23_Facility_tr_4512_1st_16551.csv
+2026-05-31 18:15:20,781 - INFO - Starting at 023_NAB_id_23_Facility_tr_4512_1st_16551.csv
+2026-05-31 18:15:44,435 - INFO - Starting at 023_NAB_id_23_Facility_tr_4512_1st_16551.csv
+2026-05-31 18:15:49,294 - INFO - Starting at 023_NAB_id_23_Facility_tr_4512_1st_16551.csv
+2026-05-31 18:16:11,105 - INFO - Starting at 023_NAB_id_23_Facility_tr_4512_1st_16551.csv
+2026-05-31 18:16:27,327 - INFO - Starting at 023_NAB_id_23_Facility_tr_4512_1st_16551.csv
+2026-05-31 18:17:05,298 - INFO - Starting at 023_NAB_id_23_Facility_tr_4512_1st_16551.csv
+2026-05-31 18:18:02,694 - INFO - Starting at 023_NAB_id_23_Facility_tr_4512_1st_16551.csv
+2026-05-31 18:18:22,991 - INFO - Starting at 023_NAB_id_23_Facility_tr_4512_1st_16551.csv
+2026-05-31 18:19:12,652 - INFO - Starting at 023_NAB_id_23_Facility_tr_4512_1st_16551.csv
+2026-05-31 18:19:52,670 - INFO - Starting at 023_NAB_id_23_Facility_tr_4512_1st_16551.csv
+2026-05-31 18:20:25,494 - INFO - Starting at 023_NAB_id_23_Facility_tr_4512_1st_16551.csv
+2026-05-31 18:20:59,106 - INFO - Starting at 023_NAB_id_23_Facility_tr_4512_1st_16551.csv
+2026-05-31 18:22:28,897 - INFO - Starting at 023_NAB_id_23_Facility_tr_4512_1st_16551.csv
+2026-05-31 18:22:45,486 - INFO - Starting at 023_NAB_id_23_Facility_tr_4512_1st_16551.csv
+2026-05-31 18:22:47,090 - INFO - Success at 023_NAB_id_23_Facility_tr_4512_1st_16551.csv using robust | missing rate: 0.0 | imputer: LERPConfig | Time cost: 1.583s at length 18049
+2026-05-31 18:22:49,317 - INFO - Success at 023_NAB_id_23_Facility_tr_4512_1st_16551.csv using robust | missing rate: 0.05 | imputer: LERPConfig | Time cost: 0.436s at length 18049
+2026-05-31 18:22:51,438 - INFO - Success at 023_NAB_id_23_Facility_tr_4512_1st_16551.csv using robust | missing rate: 0.1 | imputer: LERPConfig | Time cost: 0.336s at length 18049
+2026-05-31 18:22:53,557 - INFO - Success at 023_NAB_id_23_Facility_tr_4512_1st_16551.csv using robust | missing rate: 0.2 | imputer: LERPConfig | Time cost: 0.339s at length 18049
+2026-05-31 18:22:55,670 - INFO - Success at 023_NAB_id_23_Facility_tr_4512_1st_16551.csv using robust | missing rate: 0.3 | imputer: LERPConfig | Time cost: 0.338s at length 18049
+2026-05-31 18:22:57,883 - INFO - Success at 023_NAB_id_23_Facility_tr_4512_1st_16551.csv using robust | missing rate: 0.4 | imputer: LERPConfig | Time cost: 0.445s at length 18049
+2026-05-31 18:22:59,987 - INFO - Success at 023_NAB_id_23_Facility_tr_4512_1st_16551.csv using robust | missing rate: 0.5 | imputer: LERPConfig | Time cost: 0.338s at length 18049
+2026-05-31 18:23:02,189 - INFO - Success at 024_NAB_id_24_Synthetic_tr_1007_1st_2787.csv using robust | missing rate: 0.0 | imputer: LERPConfig | Time cost: 0.442s at length 4031
+2026-05-31 18:23:03,439 - INFO - Success at 024_NAB_id_24_Synthetic_tr_1007_1st_2787.csv using robust | missing rate: 0.05 | imputer: LERPConfig | Time cost: 0.077s at length 4031
+2026-05-31 18:23:04,687 - INFO - Success at 024_NAB_id_24_Synthetic_tr_1007_1st_2787.csv using robust | missing rate: 0.1 | imputer: LERPConfig | Time cost: 0.077s at length 4031
+2026-05-31 18:23:05,948 - INFO - Success at 024_NAB_id_24_Synthetic_tr_1007_1st_2787.csv using robust | missing rate: 0.2 | imputer: LERPConfig | Time cost: 0.077s at length 4031
+2026-05-31 18:23:06,748 - INFO - Success at 024_NAB_id_24_Synthetic_tr_1007_1st_2787.csv using robust | missing rate: 0.3 | imputer: LERPConfig | Time cost: 0.077s at length 4031
+2026-05-31 18:23:06,835 - INFO - Success at 024_NAB_id_24_Synthetic_tr_1007_1st_2787.csv using robust | missing rate: 0.4 | imputer: LERPConfig | Time cost: 0.076s at length 4031
+2026-05-31 18:23:07,465 - INFO - Success at 024_NAB_id_24_Synthetic_tr_1007_1st_2787.csv using robust | missing rate: 0.5 | imputer: LERPConfig | Time cost: 0.077s at length 4031

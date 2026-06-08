@@ -1,0 +1,11 @@
+# Machine-specific config
+benchmark_exp/configs_local.py
+
+*__pycache__/
+*.ckpt
+*.pdf
+*.DS_Store
+*.csv
+Datasets/
+*.npy
+archive/
