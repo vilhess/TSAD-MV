@@ -36,19 +36,36 @@ if __name__ == '__main__':
         data_train = train_split(data, filename)
 
         for imputer in trainable_imputers.values():
+            
+            combos = [
+                (mechanism, missing_rate)
+                for mechanism in MECHANISMS
+                for missing_rate in MISSING_RATES
+            ]
+
+            missing_combos = [
+                (mechanism, missing_rate) for mechanism, missing_rate in combos
+                if not os.path.exists(
+                    f'{args.save_imputation_dir}/{mechanism}/{imputer.imputer_name}/{missing_rate}/{filename}_data_imputed.npy'
+                )
+            ]
+
+            if not missing_combos:
+                print(f"  Skipping {imputer.imputer_name} for {filename} (all outputs exist)")
+                continue
+
             imputer.fit(data_train, prc_val=0.25)
 
-            for mechanism in MECHANISMS:
-                for missing_rate in MISSING_RATES:
+            for mechanism, missing_rate in missing_combos:
+                save_path = f'{args.save_imputation_dir}/{mechanism}/{imputer.imputer_name}/{missing_rate}/{filename}_data_imputed.npy'
 
-                    mask = get_mask(torch.from_numpy(data), seed=seed*i*(1+10*missing_rate), missing_rate=missing_rate, strategy=mechanism).numpy()
+                mask = get_mask(torch.from_numpy(data), seed=seed*i*(1+10*missing_rate), missing_rate=missing_rate, strategy=mechanism).numpy()
 
-                    data_missing = data.copy()
-                    data_missing[mask == 1] = np.nan
+                data_missing = data.copy()
+                data_missing[mask == 1] = np.nan
 
-                    data_imputed = imputer.impute(data_missing, mask)
-                    print(f"True missing rate: {missing_rate}, Missing rate observed %: {mask.sum()/ mask.size:.2%}")
+                data_imputed = imputer.impute(data_missing, mask)
+                print(f"True missing rate: {missing_rate}, Missing rate observed %: {mask.sum()/ mask.size:.2%}")
 
-                    save_dir = f'{args.save_imputation_dir}/{mechanism}/{imputer.imputer_name}/{missing_rate}'
-                    os.makedirs(save_dir, exist_ok=True)
-                    np.save(f'{save_dir}/{filename}_data_imputed.npy', data_imputed)
+                os.makedirs(os.path.dirname(save_path), exist_ok=True)
+                np.save(save_path, data_imputed)
