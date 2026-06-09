@@ -9,3 +9,9 @@ benchmark_exp/configs_local.py
 Datasets/
 *.npy
 archive/
+*.log
+*.pth
+*.pt
+*.zip
+*.tar.gz
+*.tar

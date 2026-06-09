@@ -3,7 +3,7 @@ import numpy as np
 import torch
 import argparse, time, os
 
-from TSB_AD.missing_modules.masker import get_mask
+from MissingModules.masker import get_mask
 
 from benchmark_exp.configs import MISSING_RATES, MECHANISMS, IMPUTERS, DEFAULT_PATHS
 from benchmark_exp.utils import set_seed, print_cuda_info
