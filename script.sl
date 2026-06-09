@@ -22,4 +22,4 @@ echo Working directory : $PWD
 echo Submit directory : $SLURM_SUBMIT_DIR
 
 srun python -m  benchmark_exp.Run_Detector_U_Missing \
-    --AD_Name TranAD
+    --AD_Name MTAD

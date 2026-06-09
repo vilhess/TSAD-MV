@@ -7,7 +7,7 @@
 #SBATCH --partition=gpu
 #SBATCH --gres=gpu:a100:1
 
-#SBATCH --array=0-5
+#SBATCH --array=0-1
 
 #SBATCH -n 1
 #SBATCH --cpus-per-task=16
@@ -20,12 +20,8 @@ cp -r . $LOCAL_WORK_DIR
 cd $LOCAL_WORK_DIR
 
 MODELS=(
-    TranAD
-    USAD
-    patchtrad
-    PaAno
-    PatchTST
-    AnomalyTransformer
+    CRIB
+    IMAD
 )
 
 MODEL=${MODELS[$SLURM_ARRAY_TASK_ID]}

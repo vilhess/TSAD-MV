@@ -1,8 +1,6 @@
-import os
 import random
 import numpy as np
 import torch
-import pandas as pd
 
 def set_seed(seed):
     random.seed(seed)
