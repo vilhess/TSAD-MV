@@ -21,83 +21,6 @@ from .base import BaseDetector
 from ..utils.dataset import ReconstructDataset, ReconstructCombinedDataset
 from ..utils.torch_utility import EarlyStoppingTorch, get_gpu
 
-
-def fill_nan_with_last_observed(x):
-    bs, pn, pl = x.size()
-    x = rearrange(x, "b pn pl -> b (pn pl)")
-    valid_mask = ~torch.isnan(x)
-    x_temp = torch.where(valid_mask, x, torch.zeros_like(x))
-    seq_indices = torch.arange(x.size(-1), device=x.device).unsqueeze(0)
-    valid_indices = torch.where(
-        valid_mask, seq_indices, torch.tensor(-1, device=x.device)
-    )
-    last_valid_idx = torch.cummax(valid_indices, dim=-1)[0]
-    x = x_temp.gather(-1, torch.clamp(last_valid_idx, min=0))
-    x = rearrange(x, "b (pn pl) -> b pn pl", pn=pn)
-    return x
-
-class CausalRevIN(nn.Module):
-    def __init__(self, eps=1e-5):
-        super().__init__()
-        self.eps = eps
-        self.cached_mean = None
-        self.cached_std = None
-
-    def forward(self, x, mode):
-        assert x.dim() == 3, "Input tensor must be (batch, n_patches, patch_len)"
-
-        x64 = x.double()
-
-        if mode == "norm":
-            mean, std = self._get_statistics(x64)
-            self.cached_mean, self.cached_std = mean, std
-            out = (x64 - mean) / std
-            out = torch.asinh(out)
-
-            nan_idx = out.isnan()
-            if nan_idx.any():
-                out = fill_nan_with_last_observed(out)
-
-        elif mode == "denorm":
-            assert (
-                self.cached_mean is not None and self.cached_std is not None
-            ), "Call forward(..., 'norm') before 'denorm'"
-            out = torch.sinh(x64) * self.cached_std + self.cached_mean
-
-        else:
-            raise NotImplementedError(f"Mode '{mode}' not implemented.")
-
-        return out.float()
-
-    def _get_statistics(self, x):
-        """
-        Numerically stable mean and variance computation using
-        incremental mean and variance along the patch dimension.
-        x: (B, P, L) float64
-        Returns: mean, std (both (B, P, 1))
-        """
-        B, P, L = x.shape
-
-        nan_counts = torch.isnan(x).sum(-1, keepdim=True)
-        nan_counts = torch.cumsum(nan_counts, dim=1)
-
-        counts = (
-            torch.arange(1, P + 1, device=x.device).view(1, P, 1).repeat(B, 1, 1) * L
-        )
-        counts = counts - nan_counts
-
-
-        cumsum_x = torch.cumsum(x.nansum(dim=-1, keepdim=True), dim=1)
-
-        mean = cumsum_x / counts
-
-        cumsum_x2 = torch.cumsum((x**2).nansum(dim=-1, keepdim=True), dim=1)
-
-        var = (cumsum_x2 - 2 * mean * cumsum_x + counts * mean**2) / counts
-        std = torch.sqrt(var + 1e-5)
-
-        return mean, std
-
 class ResidualBlock(nn.Module):
     def __init__(self, in_dim, hid_dim, out_dim, dropout=0.0):
         super().__init__()
@@ -220,15 +143,14 @@ class Encoder(nn.Module):
         d_model,
         n_heads,
         n_layers_encoder,
-        dropout=0,
+        dropout=0.1,
     ):
         super().__init__()
 
         self.patch_len = patch_len
-        self.revin = CausalRevIN()
 
         self.proj_embedding = ResidualBlock(
-            in_dim=2*patch_len, hid_dim=4 * patch_len, out_dim=d_model, dropout=dropout
+            in_dim=2*patch_len, hid_dim=2 * d_model, out_dim=d_model, dropout=dropout
         )
         self.dp = nn.Dropout(dropout)
         self.transformer_encoder = TransformerEncoder(
@@ -259,7 +181,6 @@ class Encoder(nn.Module):
         )  # Reshape to (bs, patch_num, patch_len)
         mask_pos = torch.isnan(x)
 
-        x = self.revin(x, mode="norm")
         x = torch.cat([x, mask_pos.float()], dim=-1)
 
         x = self.proj_embedding(x)  # bs, pn, d_model
@@ -281,6 +202,67 @@ class Encoder(nn.Module):
         encoded = rearrange(encoded, "b f d -> b (f d)")
         return encoded
 
+class Predictor(nn.Module):
+    def __init__(
+        self,
+        d_model,
+        n_heads,
+        n_layers_predictor,
+        dropout=0.1,
+    ):
+        super().__init__()
+
+        self.transformer_encoder = TransformerEncoder(
+            d_model=d_model,
+            n_heads=n_heads,
+            n_layers=n_layers_predictor,
+            dropout=dropout,
+        )
+
+        self.init_weights()
+
+    def init_weights(self):
+        for m in self.modules():
+            if isinstance(m, nn.Linear):
+                torch.nn.init.trunc_normal_(m.weight, std=0.02)
+                if m.bias is not None:
+                    torch.nn.init.constant_(m.bias, 0)
+            elif isinstance(m, nn.LayerNorm):
+                m.bias.data.fill_(0.0)
+                m.weight.data.fill_(1.0)
+
+    def forward(self, x):
+        x = self.transformer_encoder(x)  # bs, pn, d_model
+        return x
+
+class SIGReg(nn.Module):
+    """Sketch Isotropic Gaussian Regularizer (single-GPU!)"""
+
+    def __init__(self, knots=17, num_proj=1024, device=None):
+        super().__init__()
+        self.num_proj = num_proj
+        t = torch.linspace(0, 3, knots, dtype=torch.float32, device=device)
+        dt = 3 / (knots - 1)
+        weights = torch.full((knots,), 2 * dt, dtype=torch.float32, device=device)
+        weights[[0, -1]] = dt
+        window = torch.exp(-t.square() / 2.0).to(device)
+        self.register_buffer("t", t)
+        self.register_buffer("phi", window)
+        self.register_buffer("weights", weights * window)
+
+    def forward(self, proj):
+        """
+        proj: (T, B, D)
+        """
+        # sample random projections
+        A = torch.randn(proj.size(-1), self.num_proj, device=proj.device)
+        A = A.div_(A.norm(p=2, dim=0))
+        # compute the epps-pulley statistic
+        x_t = (proj @ A).unsqueeze(-1) * self.t
+        err = (x_t.cos().mean(-3) - self.phi).square() + x_t.sin().mean(-3).square()
+        statistic = (err @ self.weights) * proj.size(-2)
+        return statistic.mean() # average over projections and time
+
 def get_bank_embedding(encoder, dataloader, num_cores=128, dim_embedding=64, device=None, mask_ratios=None):
     if mask_ratios is None:
         mask_ratios = [0.0, 0.1, 0.2, 0.3, 0.4]
@@ -297,7 +279,7 @@ def get_bank_embedding(encoder, dataloader, num_cores=128, dim_embedding=64, dev
                     # Create random mask
                     mask = torch.rand_like(batch) < ratio
                     masked_batch = batch.clone()
-                    masked_batch[mask] = torch.nan
+                    masked_batch[mask] = 0
                 else:
                     masked_batch = batch
                 
@@ -356,11 +338,18 @@ def compute_anomaly_score(encoder, test_loader, bank_embedding, pca, top_k=3, de
 
 class JEPAno(BaseDetector):
     def __init__(self,
-                 win_size = 128,
-                 dim_embedding = 64,
+                 win_size = 64,
+                 patch_len=8,
+                 d_model=128,
+                 n_heads=4,
+                 n_layers_encoder=2,
+                 n_layers_predictor=2,
+                 dropout=0.05,
+                 max_mask_proba=0.3,
+                 epochs=100,
 
                  feats = 1,
-                 batch_size = 256,
+                 batch_size = 128,
                  ):
         super().__init__()
 
@@ -370,39 +359,92 @@ class JEPAno(BaseDetector):
         self.device = get_gpu(self.cuda)
 
         self.win_size = win_size
-        self.dim_embedding = dim_embedding
+        self.d_model = d_model
+        self.dim_embedding = d_model * feats
         self.batch_size = batch_size
         self.feats = feats
+        self.max_mask_proba = max_mask_proba
+        self.n_heads = n_heads
+        self.n_layers_predictor = n_layers_predictor
+        self.epochs = epochs
+        self.dropout = dropout
 
-        self.model = Encoder(
-            patch_len=32,
-            d_model=512,
-            n_heads=4,
-            n_layers_encoder=6,
-            dropout=0.0,
+        self.encoder = Encoder(
+            patch_len=patch_len,
+            d_model=d_model,
+            n_heads=n_heads,
+            n_layers_encoder=n_layers_encoder,
+            dropout=dropout
         ).to(self.device)
-
-        print("Loading pre-trained JEPA encoder...")
-        ckpt = torch.load("ckpts/jepa-epoch=06---step-step=175000.ckpt", weights_only=False)
-        encoder_state_dict = {k.replace("jepa.encoder.", ""): v for k, v in ckpt["state_dict"].items() if k.startswith("jepa.encoder.")}
-        self.model.load_state_dict(encoder_state_dict, strict=True)
-        print("Pre-trained JEPA encoder loaded.")
 
     def fit(self, data):
 
         tsTrain = data
-        if len(tsTrain) < self.win_size:
-            self.win_size = 256
-        if len(tsTrain) < self.win_size:
-            self.win_size = 128
 
         train_loader = DataLoader(
             dataset=ReconstructDataset(tsTrain, window_size=self.win_size),
             batch_size=self.batch_size,
             shuffle=True
         )
+
+        max_mask_proba = self.max_mask_proba
+
+        sigreg_loss = SIGReg(device=self.device)
+        mse_loss = nn.MSELoss()
+        lamb_sigreg = 0.09
+        predictor = Predictor(
+            d_model=self.d_model,
+            n_heads=self.n_heads,
+            n_layers_predictor=self.n_layers_predictor,
+            dropout=self.dropout
+        ).to(self.device)
+        optimizer = optim.Adam(
+            list(self.encoder.parameters()) + list(predictor.parameters()),
+            lr=1e-3,
+            weight_decay=1e-5,
+        )
+        self.optimizer = optimizer
+        self.lambda_sigreg = lamb_sigreg
+        self.lambda_pred = 10
+
+        for epoch in range(1, self.epochs + 1):
+            self.encoder.train(mode=True)
+            predictor.train(mode=True)
+            avg_loss = 0
+            loop = tqdm.tqdm(
+                enumerate(train_loader), total=len(train_loader), leave=True
+            )
+            for idx, (x, _) in loop:                
+                if torch.isnan(x).any() or torch.isinf(x).any():
+                    print("Input data contains nan or inf")
+                    x = torch.nan_to_num(x)
+                self.optimizer.zero_grad()
+
+                x = x.to(self.device)
+                x = x.transpose(1, 2)
+                x = rearrange(x, "b f s -> (b f) s")
+                bs = x.shape[0]
+
+                mask_proba = torch.rand(x.shape, device=x.device) * self.max_mask_proba
+                mask = torch.bernoulli(mask_proba).bool()
+                x_masked = x.masked_fill(mask, 0)
+                encoded = self.encoder(x_masked)
+                pred = predictor(encoded)
+                
+                sigreg_loss_value = sigreg_loss(encoded.transpose(0, 1))
+                pred_loss_value = mse_loss(pred[:, :-1], encoded[:, 1:].detach())
+
+                loss = self.lambda_pred * pred_loss_value + self.lambda_sigreg * sigreg_loss_value
+
+                loss.backward(retain_graph=True)
+
+                self.optimizer.step()
+                avg_loss += loss.cpu().item()
+                loop.set_description(f"Training Epoch [{epoch}/{self.epochs}]")
+                loop.set_postfix({"loss": avg_loss / (idx + 1), "pred_loss": pred_loss_value.cpu().item(), "sigreg_loss": sigreg_loss_value.cpu().item()})
+
         print("Extracting bank embeddings...")
-        bank_embedding, pca = get_bank_embedding(self.model, train_loader, num_cores=500, dim_embedding=self.dim_embedding, device=self.device)
+        bank_embedding, pca = get_bank_embedding(self.encoder, train_loader, num_cores=500, dim_embedding=self.dim_embedding, device=self.device)
         print("Bank embeddings extracted.")
         self.bank_embedding = bank_embedding.to(self.device)
         self.pca = pca
@@ -417,8 +459,8 @@ class JEPAno(BaseDetector):
             shuffle=False,
         )
 
-        self.model.eval()
-        scores = compute_anomaly_score(self.model, test_loader, self.bank_embedding, self.pca, top_k=3, device=self.device)
+        self.encoder.eval()
+        scores = compute_anomaly_score(self.encoder, test_loader, self.bank_embedding, self.pca, top_k=3, device=self.device)
 
         self.__anomaly_score = scores
 

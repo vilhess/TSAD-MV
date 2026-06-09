@@ -342,6 +342,6 @@ Optimal_Uni_algo_HP_dict = {
     'IMAD': {'mid_dim': 128},
     'robust': {'d_model': 32, 'seq_len': 25, 'patch_len': 8},
     'PaAno': {'patch_size': 96, 'num_iters': 100, 'lr': 1e-4, 'batch_size': 512, 'validation_size': 0.05},
-    'JEPAno': {"win_size": 512, "dim_embedding": 512},
+    'JEPAno': {"win_size": 64},
     'MTAD': {},
 }
