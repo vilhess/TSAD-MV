@@ -86,10 +86,10 @@ def run_patchtradmv(data_train, all_datas, clf, win_size=10, lr=1e-3, patch_len=
     score = clf.decision_function(all_datas)
     return score.ravel(), clf
 
-def run_JEPAno(data_train, all_datas, clf, win_size=10, dim_embedding=64):
+def run_JEPAno(data_train, all_datas, clf, win_size=64):
     from .models.JEPAno import JEPAno
     if clf is None:
-        clf = JEPAno(win_size=win_size, dim_embedding=dim_embedding, feats=all_datas["data"].shape[1])
+        clf = JEPAno(win_size=win_size, feats=all_datas["data"].shape[1])
         clf.fit(data_train)
     score = clf.decision_function(all_datas)
     return score.ravel(), clf
