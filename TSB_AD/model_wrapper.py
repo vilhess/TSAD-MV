@@ -90,9 +90,7 @@ def run_POLY(data, periodicity=1, power=3, n_jobs=1):
     return score.ravel()
 
 def run_MatrixProfile(data, clf=None, periodicity=1, n_jobs=1):
-    print('here')
     from .models.MatrixProfile import MatrixProfile
-    print('here2')
     try:
         slidingWindow = find_length_rank(data["data_imputed"], rank=periodicity)
     except Exception as e:

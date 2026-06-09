@@ -20,7 +20,6 @@ class MatrixProfile():
     """
 
     def __init__(self, window):
-        print('jj')
         self.window = window
         self.model_name = 'MatrixProfile'
 

@@ -131,10 +131,6 @@ if __name__ == '__main__':
                             all_writes_csv[mechanism][imputer.imputer_name][missing_rate],
                             columns=col_w,
                         ).to_csv(save_path, index=False)
-        
-    del output, all_datas, data, label, mask, clf, imputer
-    torch.cuda.empty_cache()
-    gc.collect()
 
 
         
